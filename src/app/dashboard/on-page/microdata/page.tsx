@@ -256,7 +256,7 @@ export default async function MicrodataPage({ searchParams }: { searchParams: Pr
       )}
 
       {params.task_id && activeTask && !taskError && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div id="results" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">

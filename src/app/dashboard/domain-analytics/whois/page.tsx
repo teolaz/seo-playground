@@ -382,7 +382,7 @@ export default async function WhoisPage({ searchParams }: { searchParams: Promis
               return (
                 <a
                   key={entry.id}
-                  href={`/dashboard/domain-analytics/whois?history_id=${entry.id}`}
+                  href={`/dashboard/domain-analytics/whois?history_id=${entry.id}#results`}
                   className={`flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                 >
                   <div className="flex-1 min-w-0">

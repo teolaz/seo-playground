@@ -116,7 +116,7 @@ export default async function RefDomainsPage({ searchParams }: { searchParams: P
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Form + Results */}
         <div className="xl:col-span-2 space-y-5">
-          <SearchForm className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4" btnLabel="Analyze" btnClassName="w-full bg-blue-600 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-40" disabled={!creds}>
+          <SearchForm className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4" btnLabel="Analyze" btnClassName="w-full bg-blue-600 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all disabled:opacity-40" disabled={!creds}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Domain</label>
@@ -154,7 +154,7 @@ export default async function RefDomainsPage({ searchParams }: { searchParams: P
                   ]}
                 />
               </div>
-              <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden">
+              <div id="results" className="bg-white border border-slate-200 rounded-3xl overflow-hidden">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-100">

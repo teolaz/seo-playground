@@ -178,7 +178,7 @@ export default async function LocalFinderPage({ searchParams }: { searchParams: 
       {error && <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">{error}</div>}
 
       {hasQuery && !error && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div id="results" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Results</h2>
@@ -247,7 +247,7 @@ export default async function LocalFinderPage({ searchParams }: { searchParams: 
               const isActive = entry.id === historyId;
               return (
                 <div key={entry.id} className={`flex items-center gap-2 px-6 py-3.5 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
-                  <a href={`/dashboard/local-finder?history_id=${entry.id}`} className="flex-1 min-w-0">
+                  <a href={`/dashboard/local-finder?history_id=${entry.id}#results`} className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{entry.keyword}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5 truncate">
                       {entry.location} · {entry.count} result{entry.count !== 1 ? 's' : ''}

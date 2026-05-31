@@ -367,7 +367,7 @@ export default async function InstantPagesPage({ searchParams }: { searchParams:
 
           {/* Checks */}
           {flaggedChecks.length > 0 && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div id="results" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100">
                 <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Checks</h2>
               </div>

@@ -207,7 +207,7 @@ export default async function RedditPage({ searchParams }: { searchParams: Promi
                 </div>
               ) : (
                 items.map((page, pi) => (
-                  <div key={pi} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div id="results" key={pi} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2 min-w-0">
                         {isFromHistory && pi === 0 && (
@@ -290,7 +290,7 @@ export default async function RedditPage({ searchParams }: { searchParams: Promi
                 return (
                   <a
                     key={entry.id}
-                    href={`/dashboard/social-media/reddit?history_id=${entry.id}`}
+                    href={`/dashboard/social-media/reddit?history_id=${entry.id}#results`}
                     className={`block px-4 py-3 hover:bg-slate-50 transition-colors ${isActive ? 'bg-orange-50' : ''}`}
                   >
                     <div className="flex items-center justify-between gap-2">

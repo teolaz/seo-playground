@@ -80,8 +80,8 @@ export default async function RankTrackerPage({ searchParams }: { searchParams: 
             <form action={checkAllAction}>
               <PendingButton
                 type="submit"
-                className="px-5 py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-700 transition-all shadow-xl shadow-slate-200"
-                pendingClassName="px-5 py-3 bg-slate-400 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-xl shadow-slate-200 cursor-not-allowed"
+                className="px-5 py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-700 transition-all shadow-xl shadow-slate-200 dark:shadow-none"
+                pendingClassName="px-5 py-3 bg-slate-400 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-xl shadow-slate-200 dark:shadow-none cursor-not-allowed"
                 pendingChildren={`Checking ${allKeywords.length}…`}
               >
                 Check All ({allKeywords.length})
@@ -108,7 +108,7 @@ export default async function RankTrackerPage({ searchParams }: { searchParams: 
                 href={`/dashboard/rank-tracker?domain=${encodeURIComponent(domain)}`}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   isActive
-                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-200'
+                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-200 dark:shadow-none'
                     : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
@@ -173,7 +173,7 @@ export default async function RankTrackerPage({ searchParams }: { searchParams: 
                 <p className="text-slate-400 text-xs">Add some keywords using the form on the right.</p>
               </div>
             ) : (
-              <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden">
+              <div id="results" className="bg-white border border-slate-200 rounded-3xl overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between gap-4">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     {activeDomain} — {rows.length} keyword{rows.length !== 1 ? 's' : ''}
@@ -267,7 +267,7 @@ export default async function RankTrackerPage({ searchParams }: { searchParams: 
                 <PendingButton
                   type="submit"
                   disabled={!creds}
-                  className="w-full bg-blue-600 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full bg-blue-600 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   pendingClassName="w-full bg-blue-400 text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-blue-100 cursor-not-allowed"
                   pendingChildren="Checking rankings…"
                 >

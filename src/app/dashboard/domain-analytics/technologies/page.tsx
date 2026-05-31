@@ -455,7 +455,7 @@ export default async function TechnologiesPage({ searchParams }: { searchParams:
                 const techEntries = Object.entries(techs);
                 const colorClass = categoryColor(category);
                 return (
-                  <div key={category} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <div id="results" key={category} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                     <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                       <h2 className="text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">{category}</h2>
                       <span className="text-[10px] font-black text-slate-400">{techEntries.length}</span>
@@ -488,7 +488,7 @@ export default async function TechnologiesPage({ searchParams }: { searchParams:
                 {domainHistory.map((entry) => {
                   const isActive = entry.id === historyId;
                   return (
-                    <a key={entry.id} href={`/dashboard/domain-analytics/technologies?mode=domain&history_id=${entry.id}`}
+                    <a key={entry.id} href={`/dashboard/domain-analytics/technologies?mode=domain&history_id=${entry.id}#results`}
                       className={`flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm font-bold font-mono truncate ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>{entry.target}</p>
@@ -601,7 +601,7 @@ export default async function TechnologiesPage({ searchParams }: { searchParams:
                 {findHistory.map((entry) => {
                   const isActive = entry.id === findHistoryId;
                   return (
-                    <a key={entry.id} href={`/dashboard/domain-analytics/technologies?mode=find&find_history_id=${entry.id}`}
+                    <a key={entry.id} href={`/dashboard/domain-analytics/technologies?mode=find&find_history_id=${entry.id}#results`}
                       className={`flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm font-bold truncate ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>{entryLabel(entry)}</p>

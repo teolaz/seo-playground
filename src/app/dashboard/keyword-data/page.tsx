@@ -167,7 +167,7 @@ export default async function KeywordDataPage({ searchParams }: { searchParams: 
       {error && <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">{error}</div>}
 
       {hasQuery && !error && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div id="results" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Results</h2>
@@ -238,7 +238,7 @@ export default async function KeywordDataPage({ searchParams }: { searchParams: 
             {historyIndex.map((entry) => {
               const isActive = entry.id === historyId;
               return (
-                <a key={entry.id} href={`/dashboard/keyword-data?history_id=${entry.id}`}
+                <a key={entry.id} href={`/dashboard/keyword-data?history_id=${entry.id}#results`}
                   className={`flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
                   <div className="shrink-0 flex flex-col items-center gap-1">
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{SE_LABELS[entry.se] ?? entry.se}</span>

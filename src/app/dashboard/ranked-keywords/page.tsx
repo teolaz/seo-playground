@@ -328,7 +328,7 @@ export default async function RankedKeywordsPage({ searchParams }: { searchParam
 
       {/* Results table */}
       {hasQuery && !error && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div id="results" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">
@@ -444,7 +444,7 @@ export default async function RankedKeywordsPage({ searchParams }: { searchParam
             {history.map((entry) => {
               const isActive = entry.id === historyId;
               return (
-                <a key={entry.id} href={`/dashboard/ranked-keywords?history_id=${entry.id}`}
+                <a key={entry.id} href={`/dashboard/ranked-keywords?history_id=${entry.id}#results`}
                   className={`flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-bold truncate font-mono ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{entry.target}</p>

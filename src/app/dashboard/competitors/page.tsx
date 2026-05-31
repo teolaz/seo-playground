@@ -220,7 +220,7 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
 
       {/* Results */}
       {hasQuery && !error && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div id="results" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">
@@ -331,7 +331,7 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
             {history.map((entry) => {
               const isActive = entry.id === historyId;
               return (
-                <a key={entry.id} href={`/dashboard/competitors?history_id=${entry.id}`}
+                <a key={entry.id} href={`/dashboard/competitors?history_id=${entry.id}#results`}
                   className={`flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-bold font-mono truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{entry.target}</p>

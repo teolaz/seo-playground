@@ -204,7 +204,7 @@ export default async function SerpPage({ searchParams }: { searchParams: Promise
 
           {/* Results */}
           {hasQuery && !error && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div id="results" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Organic results</h2>
@@ -300,7 +300,7 @@ export default async function SerpPage({ searchParams }: { searchParams: Promise
                 {history.map((entry) => {
                   const isActive = entry.id === historyId;
                   return (
-                    <a key={entry.id} href={`/dashboard/serp?history_id=${entry.id}`}
+                    <a key={entry.id} href={`/dashboard/serp?history_id=${entry.id}#results`}
                       className={`block px-4 py-3 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
                       <div className="flex items-center justify-between gap-2">
                         <p className={`text-xs font-medium truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{entry.keyword}</p>

@@ -519,7 +519,7 @@ export default async function BacklinksPage({ searchParams }: { searchParams: Pr
             {history.map((entry) => {
               const isActive = entry.id === historyId;
               return (
-                <a key={entry.id} href={`/dashboard/backlinks?history_id=${entry.id}`}
+                <a key={entry.id} href={`/dashboard/backlinks?history_id=${entry.id}#results`}
                   className={`flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-bold font-mono truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{entry.target}</p>

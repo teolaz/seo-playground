@@ -132,7 +132,7 @@ export default async function PageIntersectionPage({ searchParams }: { searchPar
       {error && <div className="bg-red-50 dark:bg-red-950 border border-red-100 text-red-600 dark:text-red-400 text-sm rounded-xl px-4 py-3">{error}</div>}
 
       {(historyId || rawPages) && !error && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div id="results" className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <span className="text-xs font-black uppercase tracking-widest text-slate-400">{items.length} shared keywords</span>
             <div className="flex items-center gap-3">
@@ -188,7 +188,7 @@ export default async function PageIntersectionPage({ searchParams }: { searchPar
               const isActive = entry.id === historyId;
               const urls = JSON.parse(entry.pages) as string[];
               return (
-                <a key={entry.id} href={`/dashboard/page-intersection?history_id=${entry.id}`}
+                <a key={entry.id} href={`/dashboard/page-intersection?history_id=${entry.id}#results`}
                   className={`flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-950' : ''}`}>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>{urls[0]}</p>

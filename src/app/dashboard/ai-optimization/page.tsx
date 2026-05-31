@@ -281,7 +281,7 @@ export default async function AiOptimizationPage({ searchParams }: { searchParam
 
       {/* Results */}
       {hasQuery && !error && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div id="results" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">
               AI Mentions — {PLATFORM_LABELS[platform] ?? platform}
