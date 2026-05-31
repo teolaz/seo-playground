@@ -46,12 +46,12 @@ async function fetchDifficulty(
   });
   if (!res.ok) return { items: [], error: `Error API ${res.status}` };
   const data = await res.json() as {
-    tasks?: Array<{ status_code?: number; status_message?: string; cost?: number; result?: DifficultyItem[] }>;
+    tasks?: Array<{ status_code?: number; status_message?: string; cost?: number; result?: Array<{ items?: DifficultyItem[] }> }>;
   };
   const task = data?.tasks?.[0];
   if (!task) return { items: [], error: 'Empty API response.' };
   if (task.status_code && task.status_code !== 20000) return { items: [], error: `DataForSEO: ${task.status_message}` };
-  return { items: task.result ?? [], cost: task.cost };
+  return { items: task.result?.[0]?.items ?? [], cost: task.cost };
 }
 
 function DifficultyBar({ value }: { value?: number }) {

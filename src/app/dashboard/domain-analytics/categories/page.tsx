@@ -4,10 +4,10 @@ import SearchForm from '@/components/SearchForm';
 import ExportCSVButton from '@/components/ExportCSVButton';
 
 interface CategoryItem {
-  category_code?: number;
-  category_code_level3?: number;
-  category_name?: string;
-  domain_percentage?: number;
+  categories?: number[];
+  metrics?: {
+    organic?: { etv?: number; count?: number };
+  };
 }
 
 interface SearchParams { target?: string; location?: string; language?: string; history_id?: string; }
@@ -65,13 +65,15 @@ export default async function DomainCategoriesPage({ searchParams }: { searchPar
   const displayLocation = activeEntry?.location ?? location;
   const displayLanguage = activeEntry?.language ?? language;
 
+  const totalEtv = items.reduce((sum, i) => sum + (i.metrics?.organic?.etv ?? 0), 0);
+
   const csvData = items.map((item) => ({
-    category_code: item.category_code ?? '',
-    category_name: item.category_name ?? '',
-    domain_percentage: item.domain_percentage?.toFixed(2) ?? '',
+    category_code: item.categories?.[0] ?? '',
+    keywords: item.metrics?.organic?.count ?? '',
+    etv: item.metrics?.organic?.etv?.toFixed(0) ?? '',
   }));
 
-  const maxPct = Math.max(...items.map((i) => i.domain_percentage ?? 0), 1);
+  const maxEtv = Math.max(...items.map((i) => i.metrics?.organic?.etv ?? 0), 1);
 
   return (
     <div className="space-y-6">
@@ -115,7 +117,7 @@ export default async function DomainCategoriesPage({ searchParams }: { searchPar
             <span className="text-xs font-black uppercase tracking-widest text-slate-400">{items.length} categories — {displayTarget}</span>
             <div className="flex items-center gap-3">
               {cost !== undefined && <span className="text-[10px] font-mono text-slate-400">cost: ${cost.toFixed(4)}</span>}
-              {items.length > 0 && <ExportCSVButton data={csvData} filename={`categories-${displayTarget}.csv`} columns={[{key:'category_code',label:'Code'},{key:'category_name',label:'Category'},{key:'domain_percentage',label:'Percentage (%)'}]} />}
+              {items.length > 0 && <ExportCSVButton data={csvData} filename={`categories-${displayTarget}.csv`} columns={[{key:'category_code',label:'Category Code'},{key:'keywords',label:'Keywords'},{key:'etv',label:'Est. Traffic (ETV)'}]} />}
             </div>
           </div>
           {items.length === 0 ? (
@@ -123,21 +125,29 @@ export default async function DomainCategoriesPage({ searchParams }: { searchPar
           ) : (
             <div className="divide-y divide-slate-50 dark:divide-slate-800">
               {items.map((item, i) => {
-                const pct = item.domain_percentage ?? 0;
-                const barW = Math.round((pct / maxPct) * 100);
+                const etv = item.metrics?.organic?.etv ?? 0;
+                const count = item.metrics?.organic?.count ?? 0;
+                const barW = Math.round((etv / maxEtv) * 100);
+                const share = totalEtv > 0 ? ((etv / totalEtv) * 100).toFixed(1) : '0.0';
+                const codes = item.categories ?? [];
                 return (
                   <div key={i} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="w-10 text-right text-[11px] font-mono text-slate-400 tabular-nums shrink-0">{i + 1}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{item.category_name ?? '—'}</p>
-                      <div className="mt-1.5 flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {codes.map((c) => (
+                          <span key={c} className="text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">{c}</span>
+                        ))}
+                        <span className="text-[11px] text-slate-400">{count.toLocaleString('en-GB')} keywords</span>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${barW}%` }} />
                         </div>
-                        <span className="text-[11px] font-black text-slate-500 tabular-nums shrink-0">{pct.toFixed(1)}%</span>
+                        <span className="text-[11px] font-black text-slate-500 tabular-nums shrink-0">{share}%</span>
+                        <span className="text-[11px] font-mono text-slate-400 tabular-nums shrink-0">{Math.round(etv).toLocaleString('en-GB')} ETV</span>
                       </div>
                     </div>
-                    <div className="text-[10px] font-mono text-slate-300 dark:text-slate-600 shrink-0">{item.category_code}</div>
                   </div>
                 );
               })}

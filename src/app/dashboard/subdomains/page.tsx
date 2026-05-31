@@ -5,10 +5,13 @@ import ExportCSVButton from '@/components/ExportCSVButton';
 
 interface SubdomainItem {
   subdomain?: string;
-  rank?: number;
-  keywords?: number;
-  traffic?: number;
-  traffic_cost?: number;
+  metrics?: {
+    organic?: {
+      count?: number;
+      etv?: number;
+      estimated_paid_traffic_cost?: number;
+    };
+  };
 }
 
 interface SearchParams { target?: string; location?: string; language?: string; limit?: string; history_id?: string; }
@@ -68,14 +71,13 @@ export default async function SubdomainsPage({ searchParams }: { searchParams: P
   const displayLocation = activeEntry?.location ?? location;
   const displayLanguage = activeEntry?.language ?? language;
 
-  const maxTraffic = Math.max(...items.map((i) => i.traffic ?? 0), 1);
+  const maxTraffic = Math.max(...items.map((i) => i.metrics?.organic?.etv ?? 0), 1);
 
   const csvData = items.map((item) => ({
     subdomain: item.subdomain ?? '',
-    rank: item.rank ?? '',
-    keywords: item.keywords ?? '',
-    traffic: item.traffic ?? '',
-    traffic_cost: item.traffic_cost != null ? item.traffic_cost.toFixed(2) : '',
+    keywords: item.metrics?.organic?.count ?? '',
+    traffic: item.metrics?.organic?.etv?.toFixed(0) ?? '',
+    traffic_cost: item.metrics?.organic?.estimated_paid_traffic_cost?.toFixed(2) ?? '',
   }));
 
   return (
@@ -121,7 +123,7 @@ export default async function SubdomainsPage({ searchParams }: { searchParams: P
             <span className="text-xs font-black uppercase tracking-widest text-slate-400">{items.length} subdomains — {displayTarget}</span>
             <div className="flex items-center gap-3">
               {cost !== undefined && <span className="text-[10px] font-mono text-slate-400">cost: ${cost.toFixed(4)}</span>}
-              {items.length > 0 && <ExportCSVButton data={csvData} filename={`subdomains-${displayTarget}.csv`} columns={[{key:'subdomain',label:'Subdomain'},{key:'rank',label:'Rank'},{key:'keywords',label:'Keywords'},{key:'traffic',label:'Traffic'},{key:'traffic_cost',label:'Traffic Value ($)'}]} />}
+              {items.length > 0 && <ExportCSVButton data={csvData} filename={`subdomains-${displayTarget}.csv`} columns={[{key:'subdomain',label:'Subdomain'},{key:'keywords',label:'Keywords'},{key:'traffic',label:'Est. Traffic (ETV)'},{key:'traffic_cost',label:'Traffic Value ($)'}]} />}
             </div>
           </div>
           {items.length === 0 ? (
@@ -140,14 +142,16 @@ export default async function SubdomainsPage({ searchParams }: { searchParams: P
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {items.map((item, i) => {
-                    const share = maxTraffic > 0 ? Math.round(((item.traffic ?? 0) / maxTraffic) * 100) : 0;
+                    const org = item.metrics?.organic;
+                    const etv = org?.etv ?? 0;
+                    const share = maxTraffic > 0 ? Math.round((etv / maxTraffic) * 100) : 0;
                     return (
                       <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-6 py-3 font-mono text-sm text-blue-600 dark:text-blue-400 max-w-[240px]">
                           <a href={`https://${item.subdomain}`} target="_blank" rel="noopener noreferrer" className="hover:underline truncate block">{item.subdomain ?? '—'}</a>
                         </td>
-                        <td className="px-4 py-3 text-right font-mono text-slate-700 dark:text-slate-300 tabular-nums">{fmt(item.keywords)}</td>
-                        <td className="px-4 py-3 text-right font-mono text-slate-700 dark:text-slate-300 tabular-nums font-bold">{fmt(item.traffic)}</td>
+                        <td className="px-4 py-3 text-right font-mono text-slate-700 dark:text-slate-300 tabular-nums">{fmt(org?.count)}</td>
+                        <td className="px-4 py-3 text-right font-mono text-slate-700 dark:text-slate-300 tabular-nums font-bold">{fmt(Math.round(etv))}</td>
                         <td className="px-6 py-3 hidden md:table-cell">
                           <div className="flex items-center gap-2">
                             <div className="w-24 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -157,7 +161,7 @@ export default async function SubdomainsPage({ searchParams }: { searchParams: P
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-slate-500 tabular-nums hidden lg:table-cell">
-                          {item.traffic_cost != null ? `$${item.traffic_cost.toLocaleString('en-GB', { maximumFractionDigits: 0 })}` : '—'}
+                          {org?.estimated_paid_traffic_cost != null ? `$${Math.round(org.estimated_paid_traffic_cost).toLocaleString('en-GB')}` : '—'}
                         </td>
                       </tr>
                     );
