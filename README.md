@@ -61,24 +61,40 @@ If you find this useful, consider supporting the project:
 
 ## Getting Started
 
-```bash
-# Install dependencies
-npm install
+### Option 1 — Docker (recommended)
 
-# Start the development server
+The easiest and fastest way to run the app. Docker builds a production image so the app is fully optimized.
+
+```bash
+# Build and start (first run)
+docker compose up --build
+
+# Subsequent runs
+docker compose up
+```
+
+The database is persisted in `./data/seo-playground.db` on your machine.
+
+### Option 2 — Node.js (production mode)
+
+Faster than dev mode — build once, then run.
+
+```bash
+npm install
+npm run build
+npm start
+```
+
+### Option 3 — Node.js (dev mode)
+
+Convenient for development but noticeably slower — Next.js recompiles on every request and skips all optimizations. Not recommended for daily use.
+
+```bash
+npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and go to **Settings** to enter your DataForSEO API credentials.
-
-## Docker
-
-```bash
-# Build and start
-docker compose up --build
-
-# The database is persisted in ./data/seo-playground.db
-```
 
 ## Configuration
 
