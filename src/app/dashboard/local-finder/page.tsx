@@ -1,17 +1,8 @@
 import {
   getCredentials, getSetting, getLfHistory, saveLfSearch, getLfResults, type LfHistoryEntry,
-  getGridHistory, getGridEntry, saveGridSearch, saveGridSearchPending, getGridResults,
-  type GridSearchEntry, type GridPoint, type GridQueueMode,
 } from '@/lib/db';
 import LocalFinderForm from './LocalFinderForm';
-import GridResults from './GridResults';
-import GridPending from './GridPending';
-import {
-  type LocalPackItem,
-  fetchGridSearch, postGridTasksQueue, stableGridId,
-} from './grid-api';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { type LocalPackItem } from './grid-api';
 
 interface Rating {
   value?: number;
@@ -30,16 +21,7 @@ interface SearchParams {
   min_rating?: string;
   time_filter?: string;
   history_id?: string;
-  // grid mode
-  mode?: string;
-  grid_size?: string;
-  spacing_km?: string;
-  grid_target?: string;
-  grid_history_id?: string;
-  queue_mode?: string;
 }
-
-// ─── API helpers ──────────────────────────────────────────────────────────────
 
 async function fetchLocalFinder(
   params: SearchParams, login: string, pass: string,
@@ -77,8 +59,6 @@ async function fetchLocalFinder(
   return { items, cost: task.cost, checkUrl: result?.check_url };
 }
 
-// ─── UI helpers ───────────────────────────────────────────────────────────────
-
 function StarRating({ rating }: { rating?: Rating }) {
   if (!rating?.value) return null;
   const pct = (rating.value / (rating.rating_max ?? 5)) * 100;
@@ -89,7 +69,7 @@ function StarRating({ rating }: { rating?: Rating }) {
         <div className="absolute inset-0 overflow-hidden text-amber-400" style={{ width: `${pct}%` }}>{'★★★★★'}</div>
       </div>
       <span className="text-xs font-bold text-slate-700">{rating.value.toFixed(1)}</span>
-      {rating.votes_count !== undefined && <span className="text-[11px] text-slate-400">({rating.votes_count.toLocaleString("en-GB")})</span>}
+      {rating.votes_count !== undefined && <span className="text-[11px] text-slate-400">({rating.votes_count.toLocaleString('en-GB')})</span>}
     </div>
   );
 }
@@ -104,34 +84,15 @@ function lfRerunUrl(entry: LfHistoryEntry) {
   return `/dashboard/local-finder?${p.toString()}`;
 }
 
-function gridRerunUrl(entry: { keyword: string; center: string; grid_size: number; spacing_km: number; target: string; language: string; queue_mode: string }) {
-  const p = new URLSearchParams({
-    keyword: entry.keyword,
-    location_coordinate: entry.center,
-    grid_size: String(entry.grid_size),
-    spacing_km: String(entry.spacing_km),
-    grid_target: entry.target,
-    language: entry.language,
-    queue_mode: entry.queue_mode,
-    mode: 'grid',
-  });
-  return `/dashboard/local-finder?${p.toString()}`;
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default async function LocalFinderPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const creds = getCredentials();
   const params = await searchParams;
   const historyId = params.history_id;
-  const gridHistoryId = params.grid_history_id;
-  const isGridMode = params.mode === 'grid';
 
   const defaultLocation = getSetting('default_location') ?? 'France';
   const defaultLanguage = getSetting('default_language') ?? 'English';
   const defaultCoordinates = getSetting('default_coordinates') ?? '';
 
-  // ── Regular local finder state ──
   let items: LocalPackItem[] = [];
   let cost: number | undefined;
   let checkUrl: string | undefined;
@@ -139,47 +100,22 @@ export default async function LocalFinderPage({ searchParams }: { searchParams: 
   let isFromHistory = false;
   let activeEntry: LfHistoryEntry | null = null;
 
-  // ── Grid search state ──
-  let gridResults: GridPoint[] | null = null;
-  let gridEntry: GridSearchEntry | null = null;
-  let gridPending: { id: string; totalPoints: number; queueMode: GridQueueMode } | null = null;
-  let gridError: string | null = null;
-  let gridCost: number | undefined;
-
-  // ── Load regular history ──
   if (historyId) {
     const saved = getLfResults<LocalPackItem>(historyId);
     if (saved) {
       items = saved;
       isFromHistory = true;
-      const index = getLfHistory();
-      activeEntry = index.find((e) => e.id === historyId) ?? null;
+      activeEntry = getLfHistory().find((e) => e.id === historyId) ?? null;
     } else {
       error = 'Search not found.';
     }
   }
 
-  // ── Load grid history ──
-  if (gridHistoryId) {
-    const entry = getGridEntry(gridHistoryId);
-    if (!entry) {
-      gridError = 'Search not found.';
-    } else if (entry.status === 'pending') {
-      gridEntry = entry;
-      gridPending = { id: entry.id, totalPoints: entry.grid_size ** 2, queueMode: entry.queue_mode };
-    } else {
-      gridResults = getGridResults(gridHistoryId);
-      gridEntry = entry;
-    }
-  }
-
-  // ── Fresh regular search ──
   const hasQuery = historyId || params.keyword?.trim();
-  if (!historyId && !isGridMode && params.keyword?.trim()) {
+  if (!historyId && params.keyword?.trim()) {
     if (!creds) {
       error = 'DataForSEO credentials missing. Configure them in Settings.';
     } else {
-      // Stable ID for deduplication across concurrent renders
       const lfWindow = Math.floor(Date.now() / 60_000);
       const lfKey = `${lfWindow}|${params.keyword}|${params.location_coordinate ?? params.location}|${params.language}|${params.device}`;
       let lfHash = 0x811c9dc5;
@@ -203,7 +139,8 @@ export default async function LocalFinderPage({ searchParams }: { searchParams: 
             ts: Date.now(),
             keyword: params.keyword ?? '',
             location: params.location ?? '',
-            count: items.length, cost: result.cost,
+            count: items.length,
+            cost: result.cost,
             params: Object.fromEntries(
               Object.entries(params).filter(([k, v]) => k !== 'history_id' && v !== undefined)
             ) as Record<string, string>,
@@ -214,79 +151,7 @@ export default async function LocalFinderPage({ searchParams }: { searchParams: 
     }
   }
 
-  // ── Fresh grid search ──
-  if (!gridHistoryId && isGridMode && params.keyword?.trim() && params.location_coordinate && params.grid_target) {
-    if (!creds) {
-      gridError = 'DataForSEO credentials missing. Configure them in Settings.';
-    } else {
-      const gridSize = Math.min(Math.max(parseInt(params.grid_size ?? '5', 10), 3), 11);
-      const spacingKm = parseFloat(params.spacing_km ?? '1');
-      const queueMode = (params.queue_mode ?? 'live') as GridQueueMode;
-
-      // Stable ID prevents duplicate API calls when React renders this component
-      // multiple times for a single request (concurrent rendering).
-      const id = stableGridId(
-        params.keyword, params.location_coordinate, gridSize, spacingKm, params.grid_target, queueMode,
-      );
-
-      // Check if this exact search was already executed (another concurrent render beat us to it)
-      const alreadySaved = getGridEntry(id);
-      if (alreadySaved) {
-        gridEntry = alreadySaved;
-        if (alreadySaved.status === 'pending') {
-          gridPending = { id, totalPoints: gridSize ** 2, queueMode };
-        } else {
-          gridResults = getGridResults(id);
-          gridCost = alreadySaved.cost;
-        }
-      } else {
-        const baseEntry: GridSearchEntry = {
-          id, ts: Date.now(),
-          keyword: params.keyword,
-          target: params.grid_target,
-          center: params.location_coordinate,
-          grid_size: gridSize,
-          spacing_km: spacingKm,
-          language: params.language ?? defaultLanguage,
-          status: 'done',
-          queue_mode: queueMode,
-        };
-
-        if (queueMode === 'live') {
-          const result = await fetchGridSearch(
-            params.keyword, params.location_coordinate,
-            gridSize, spacingKm, params.language ?? defaultLanguage,
-            params.grid_target, creds.login, creds.pass,
-          );
-          if (result.error) {
-            gridError = result.error;
-          } else {
-            gridResults = result.results;
-            gridCost = result.cost;
-            gridEntry = { ...baseEntry, cost: result.cost };
-            saveGridSearch(gridEntry, result.results);
-          }
-        } else {
-          const result = await postGridTasksQueue(
-            params.keyword, params.location_coordinate,
-            gridSize, spacingKm, params.language ?? defaultLanguage,
-            creds.login, creds.pass,
-          );
-          if (result.error) {
-            gridError = result.error;
-          } else {
-            gridEntry = { ...baseEntry, status: 'pending', cost: result.cost };
-            saveGridSearchPending(gridEntry, result.taskPoints);
-            gridPending = { id, totalPoints: gridSize ** 2, queueMode };
-          }
-        }
-      }
-    }
-  }
-
   const historyIndex = getLfHistory();
-  const gridHistory = getGridHistory();
-
   const sourceParams = activeEntry?.params ?? params;
   const formDefaults = {
     keyword: (sourceParams.keyword ?? '').toString(),
@@ -299,48 +164,20 @@ export default async function LocalFinderPage({ searchParams }: { searchParams: 
     depth: (sourceParams.depth ?? '20').toString(),
     minRating: (sourceParams.min_rating ?? '').toString(),
     timeFilter: (sourceParams.time_filter ?? '').toString(),
-    gridMode: isGridMode,
-    gridSize: (params.grid_size ?? '5').toString(),
-    spacingKm: (params.spacing_km ?? '1').toString(),
-    gridTarget: (params.grid_target ?? '').toString(),
-    queueMode: (params.queue_mode ?? 'live').toString(),
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">Local Finder</h1>
-        <p className="text-sm text-slate-400 mt-1">Google Local Finder results and Grid Search — Live, Priority, or Standard queue.</p>
+        <p className="text-sm text-slate-400 mt-1">Google local pack results for any keyword and location.</p>
       </div>
 
       <LocalFinderForm defaults={formDefaults} />
 
-      {/* ── Grid results ── */}
-      {gridError && <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">{gridError}</div>}
-      {gridPending && gridEntry && (
-        <GridPending
-          searchId={gridPending.id}
-          totalPoints={gridPending.totalPoints}
-          queueMode={gridPending.queueMode}
-          keyword={gridEntry.keyword}
-          target={gridEntry.target}
-          gridSize={gridEntry.grid_size}
-        />
-      )}
-      {gridResults && gridEntry && (
-        <GridResults
-          results={gridResults}
-          gridSize={gridEntry.grid_size}
-          keyword={gridEntry.keyword}
-          target={gridEntry.target}
-          cost={gridCost ?? gridEntry.cost}
-        />
-      )}
-
-      {/* ── Regular results ── */}
       {error && <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">{error}</div>}
 
-      {hasQuery && !error && !isGridMode && (
+      {hasQuery && !error && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
@@ -400,90 +237,33 @@ export default async function LocalFinderPage({ searchParams }: { searchParams: 
         </div>
       )}
 
-      {/* ── History ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Regular history */}
-        {historyIndex.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Local Finder History</h2>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {historyIndex.map((entry) => {
-                const isActive = entry.id === historyId;
-                return (
-                  <div key={entry.id} className={`flex items-center gap-2 px-6 py-3.5 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
-                    <a href={`/dashboard/local-finder?history_id=${entry.id}`} className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{entry.keyword}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                        {entry.location} · {entry.count} result{entry.count !== 1 ? 's' : ''}
-                        {entry.cost !== undefined ? ` · $${entry.cost.toFixed(4)}` : ''}
-                      </p>
-                    </a>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-[11px] text-slate-400">{formatDate(entry.ts)}</span>
-                      <a
-                        href={lfRerunUrl(entry)}
-                        className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 transition-colors"
-                        title="Run this search again"
-                      >
-                        Re-run ↻
-                      </a>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {historyIndex.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">History</h2>
           </div>
-        )}
-
-        {/* Grid search history */}
-        {gridHistory.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Grid Search History</h2>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {gridHistory.map((entry) => {
-                const isActive = entry.id === gridHistoryId;
-                const isPending = entry.status === 'pending';
-                return (
-                  <div key={entry.id} className={`flex items-center gap-2 px-6 py-3.5 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
-                    <a href={`/dashboard/local-finder?grid_history_id=${entry.id}`} className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm font-medium truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>
-                          {entry.keyword}
-                        </p>
-                        <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">{entry.grid_size}×{entry.grid_size}</span>
-                        {isPending && (
-                          <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0">Pending</span>
-                        )}
-                        {entry.queue_mode !== 'live' && !isPending && (
-                          <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0 capitalize">{entry.queue_mode}</span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                        Target: {entry.target} · {entry.spacing_km} km
-                        {entry.cost !== undefined ? ` · $${entry.cost.toFixed(4)}` : ''}
-                      </p>
-                    </a>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-[11px] text-slate-400">{formatDate(entry.ts)}</span>
-                      <a
-                        href={gridRerunUrl(entry)}
-                        className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 transition-colors"
-                        title="Run this search again"
-                      >
-                        Re-run ↻
-                      </a>
-                    </div>
+          <div className="divide-y divide-slate-50">
+            {historyIndex.map((entry) => {
+              const isActive = entry.id === historyId;
+              return (
+                <div key={entry.id} className={`flex items-center gap-2 px-6 py-3.5 hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
+                  <a href={`/dashboard/local-finder?history_id=${entry.id}`} className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{entry.keyword}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                      {entry.location} · {entry.count} result{entry.count !== 1 ? 's' : ''}
+                      {entry.cost !== undefined ? ` · $${entry.cost.toFixed(4)}` : ''}
+                    </p>
+                  </a>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[11px] text-slate-400">{formatDate(entry.ts)}</span>
+                    <a href={lfRerunUrl(entry)} className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 transition-colors" title="Run again">Re-run ↻</a>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
