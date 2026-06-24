@@ -5,6 +5,7 @@ import {
 import LocalFinderForm from '../local-finder/LocalFinderForm';
 import GridResults from '../local-finder/GridResults';
 import GridPending from '../local-finder/GridPending';
+import HistorySidebar from '@/components/HistorySidebar';
 import { fetchGridSearch, postGridTasksQueue, stableGridId } from '../local-finder/grid-api';
 
 interface SearchParams {
@@ -152,6 +153,40 @@ export default async function GeoGridPage({ searchParams }: { searchParams: Prom
     queueMode: (params.queue_mode ?? 'live').toString(),
   };
 
+  const historyItems = gridHistory.map((entry) => {
+    const isActive = entry.id === gridHistoryId;
+    const isPending = entry.status === 'pending';
+    return (
+      <div key={entry.id} className={`px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-950' : ''}`}>
+        <a href={`/dashboard/geo-grid?grid_history_id=${entry.id}#results`} className="block min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className={`text-sm font-medium truncate ${isActive ? 'text-blue-700' : 'text-slate-800 dark:text-slate-200'}`}>
+              {entry.keyword}
+            </p>
+            <span className="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded shrink-0">{entry.grid_size}×{entry.grid_size}</span>
+            {isPending && (
+              <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0">Pending</span>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+            Target: {entry.target} · {entry.spacing_km} km
+            {entry.cost !== undefined ? ` · $${entry.cost.toFixed(4)}` : ''}
+          </p>
+        </a>
+        <div className="flex items-center justify-between gap-3 mt-1.5">
+          <span className="text-[11px] text-slate-400">{formatDate(entry.ts)}</span>
+          <a
+            href={gridRerunUrl(entry)}
+            className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 transition-colors"
+            title="Run this search again"
+          >
+            Re-run ↻
+          </a>
+        </div>
+      </div>
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -159,75 +194,40 @@ export default async function GeoGridPage({ searchParams }: { searchParams: Prom
         <p className="text-sm text-slate-400 mt-1">Visualize your local ranking across a geographic grid of points.</p>
       </div>
 
-      <LocalFinderForm defaults={formDefaults} />
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <div className="flex-1 min-w-0 space-y-6">
+          <LocalFinderForm defaults={formDefaults} />
 
-      <div id="results">
-        {gridError && (
-          <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">{gridError}</div>
-        )}
-        {gridPending && gridEntry && (
-          <GridPending
-            searchId={gridPending.id}
-            totalPoints={gridPending.totalPoints}
-            queueMode={gridPending.queueMode}
-            keyword={gridEntry.keyword}
-            target={gridEntry.target}
-            gridSize={gridEntry.grid_size}
-          />
-        )}
-        {gridResults && gridEntry && (
-          <GridResults
-            results={gridResults}
-            gridSize={gridEntry.grid_size}
-            keyword={gridEntry.keyword}
-            target={gridEntry.target}
-            cost={gridCost ?? gridEntry.cost}
-          />
-        )}
-      </div>
-
-      {gridHistory.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-            <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Grid Search History</h2>
-          </div>
-          <div className="divide-y divide-slate-50 dark:divide-slate-800">
-            {gridHistory.map((entry) => {
-              const isActive = entry.id === gridHistoryId;
-              const isPending = entry.status === 'pending';
-              return (
-                <div key={entry.id} className={`flex items-center gap-2 px-6 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-950' : ''}`}>
-                  <a href={`/dashboard/geo-grid?grid_history_id=${entry.id}#results`} className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`text-sm font-medium truncate ${isActive ? 'text-blue-700' : 'text-slate-800 dark:text-slate-200'}`}>
-                        {entry.keyword}
-                      </p>
-                      <span className="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded shrink-0">{entry.grid_size}×{entry.grid_size}</span>
-                      {isPending && (
-                        <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0">Pending</span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                      Target: {entry.target} · {entry.spacing_km} km
-                      {entry.cost !== undefined ? ` · $${entry.cost.toFixed(4)}` : ''}
-                    </p>
-                  </a>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[11px] text-slate-400">{formatDate(entry.ts)}</span>
-                    <a
-                      href={gridRerunUrl(entry)}
-                      className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 transition-colors"
-                      title="Run this search again"
-                    >
-                      Re-run ↻
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
+          <div id="results">
+            {gridError && (
+              <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">{gridError}</div>
+            )}
+            {gridPending && gridEntry && (
+              <GridPending
+                searchId={gridPending.id}
+                totalPoints={gridPending.totalPoints}
+                queueMode={gridPending.queueMode}
+                keyword={gridEntry.keyword}
+                target={gridEntry.target}
+                gridSize={gridEntry.grid_size}
+              />
+            )}
+            {gridResults && gridEntry && (
+              <GridResults
+                results={gridResults}
+                gridSize={gridEntry.grid_size}
+                keyword={gridEntry.keyword}
+                target={gridEntry.target}
+                cost={gridCost ?? gridEntry.cost}
+              />
+            )}
           </div>
         </div>
-      )}
+
+        {gridHistory.length > 0 && (
+          <HistorySidebar title="Grid Search History" items={historyItems} />
+        )}
+      </div>
     </div>
   );
 }

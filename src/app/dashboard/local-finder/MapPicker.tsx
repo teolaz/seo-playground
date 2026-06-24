@@ -162,7 +162,6 @@ export default function MapPicker({ coordinate, onChange, showGrid, gridSize, sp
         setExpanded(true);
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showGrid, coordinate, gridSize, spacingKm]);
 
   // ── Geocoding ─────────────────────────────────────────────────────────────

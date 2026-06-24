@@ -149,8 +149,8 @@ export default async function RedditPage({ searchParams }: { searchParams: Promi
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
             <p className="text-sm text-slate-500 leading-relaxed">
               Enter up to <strong className="text-slate-700">10 URLs</strong> and instantly surface every Reddit thread
-              that links to or discusses those pages. For each mention you'll see the post title, the author, the
-              subreddit it was shared in, and the community's member count — useful for brand monitoring, content
+              that links to or discusses those pages. For each mention you&apos;ll see the post title, the author, the
+              subreddit it was shared in, and the community&apos;s member count — useful for brand monitoring, content
               distribution research, and spotting niche communities to engage with.
             </p>
 

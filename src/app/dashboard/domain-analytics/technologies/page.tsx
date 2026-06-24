@@ -517,7 +517,7 @@ export default async function TechnologiesPage({ searchParams }: { searchParams:
             {activeKw && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-black uppercase tracking-widest text-slate-400">Keyword</span>
-                <span className="px-2 py-0.5 rounded-lg bg-violet-50 border border-violet-100 text-violet-700 text-xs font-bold">"{activeKw}"</span>
+                <span className="px-2 py-0.5 rounded-lg bg-violet-50 border border-violet-100 text-violet-700 text-xs font-bold">&ldquo;{activeKw}&rdquo;</span>
               </div>
             )}
             {isFindFromHistory && (

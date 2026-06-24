@@ -7,6 +7,8 @@ import {
 } from '@/lib/db';
 import { submitReviewsTaskAction } from './actions';
 import PendingButton from '@/components/PendingButton';
+import HistorySidebar from '@/components/HistorySidebar';
+import DownloadCsvButton from './DownloadCsvButton';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -138,7 +140,7 @@ function MonthlyChart({ reviews }: { reviews: Review[] }) {
 
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const W = 600, H = 160;
-  const PAD = { top: 12, right: 10, bottom: 36, left: 32 };
+  const PAD = { top: 12, right: 10, bottom: 24, left: 32 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
   const maxVal = Math.max(...entries.map(([, v]) => v), 1);
@@ -167,33 +169,27 @@ function MonthlyChart({ reviews }: { reviews: Review[] }) {
         const x = cx - barW / 2;
         const y = PAD.top + chartH - barH;
         const [year, mStr] = month.split('-');
-        const label = `${MONTHS[parseInt(mStr, 10) - 1]} ${year}`;
-        const shortLabel = `${MONTHS[parseInt(mStr, 10) - 1]} '${year.slice(2)}`;
-        const showLabel = n <= 24;
-        const rotate = n > 12;
+        const monthIdx = parseInt(mStr, 10) - 1;
+        const label = `${MONTHS[monthIdx]} ${year}`;
 
         return (
           <g key={month}>
-            {/* Invisible wider hit area — native browser tooltip via title attr */}
-            <rect {...({ x: PAD.left + i * step, y: PAD.top, width: step, height: chartH, fill: 'transparent', title: `${label}: ${count} review${count !== 1 ? 's' : ''}` } as React.SVGProps<SVGRectElement>)} />
-            <rect x={x} y={y} width={barW} height={barH} rx="3" fill="#3b82f6" opacity="0.8" />
+            {/* Invisible wider hit area — native browser tooltip via <title> child */}
+            <rect x={PAD.left + i * step} y={PAD.top} width={step} height={chartH} fill="transparent">
+              <title>{`${label}: ${count} review${count !== 1 ? 's' : ''}`}</title>
+            </rect>
+            <rect x={x} y={y} width={barW} height={barH} rx="3" fill="#3b82f6" opacity="0.8">
+              <title>{`${label}: ${count} review${count !== 1 ? 's' : ''}`}</title>
+            </rect>
             {barH > 16 && (
               <text x={cx} y={y + barH - 4} textAnchor="middle" fontSize="8" fill="white" fontWeight="700">
                 {count}
               </text>
             )}
-            {showLabel && (
-              <text
-                x={cx}
-                y={H - PAD.bottom + 14}
-                textAnchor={rotate ? 'end' : 'middle'}
-                fontSize="9"
-                fill="#94a3b8"
-                transform={rotate ? `rotate(-40, ${cx}, ${H - PAD.bottom + 14})` : undefined}
-              >
-                {shortLabel}
-              </text>
-            )}
+            {/* Month initial under every bar */}
+            <text x={cx} y={H - PAD.bottom + 13} textAnchor="middle" fontSize="9" fill="#94a3b8">
+              {MONTHS[monthIdx][0]}
+            </text>
           </g>
         );
       })}
@@ -226,14 +222,23 @@ function RatingGauge({ avg, total }: { avg: number; total: number }) {
 
   const strokeColor = avg >= 4.5 ? '#10b981' : avg >= 4 ? '#3b82f6' : avg >= 3 ? '#f59e0b' : '#ef4444';
 
+  // Number + labels are rendered as HTML (not SVG <text>) so they always paint
+  // reliably regardless of web-font weight loading quirks in some browsers.
   return (
-    <svg viewBox="0 0 140 90" className="w-36 h-auto">
-      <path d={arc(R, startAngle, endAngle)} fill="none" stroke="#f1f5f9" strokeWidth="10" strokeLinecap="round" />
-      <path d={arc(R, startAngle, fillAngle)} fill="none" stroke={strokeColor} strokeWidth="10" strokeLinecap="round" />
-      <text x={cx} y={cy - 6} textAnchor="middle" fontSize="22" fontWeight="900" fill="#0f172a">{avg.toFixed(1)}</text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fontSize="9" fill="#94a3b8">out of 5</text>
-      <text x={cx} y={cy + 25} textAnchor="middle" fontSize="9" fill="#94a3b8">{total} reviews</text>
-    </svg>
+    <div className="relative w-36 shrink-0">
+      <svg viewBox="0 0 140 104" className="w-full h-auto">
+        <path d={arc(R, startAngle, endAngle)} fill="none" stroke="#f1f5f9" strokeWidth="10" strokeLinecap="round" />
+        <path d={arc(R, startAngle, fillAngle)} fill="none" stroke={strokeColor} strokeWidth="10" strokeLinecap="round" />
+      </svg>
+      <div
+        className="absolute left-0 right-0 flex flex-col items-center pointer-events-none"
+        style={{ top: '60%', transform: 'translateY(-50%)' }}
+      >
+        <span className="text-2xl font-black text-slate-900 leading-none tabular-nums">{avg.toFixed(1)}</span>
+        <span className="text-[9px] text-slate-400 mt-1">out of 5</span>
+        <span className="text-[9px] text-slate-400">{total} reviews</span>
+      </div>
+    </div>
   );
 }
 
@@ -247,24 +252,31 @@ function GoalCalculator({ reviews }: { reviews: Review[] }) {
   const sum = ratings.reduce((a, b) => a + b, 0);
   const avg = sum / n;
 
-  // Every 0.1 step from just above current avg up to 4.9
-  // Using integer arithmetic to avoid floating-point drift
-  const startStep = Math.ceil(avg * 10) + 1; // first step strictly above avg, in 0.1 units
-  const targets: number[] = [];
-  for (let step = startStep; step <= 49; step++) {
-    targets.push(step / 10);
+  // Google displays the average rounded to one decimal, rounding the .x5 case
+  // DOWN (4.74 → 4.7, 4.75 → 4.7, 4.76 → 4.8). So a value displays as T when it
+  // sits in (T − 0.05, T + 0.05]. To make Google *show* a target rating you only
+  // need the true average to cross that lower threshold (T − 0.05) — not to
+  // literally reach T. Pre-round to kill float noise on the .x5 boundary.
+  const displayedTenths = Math.ceil(Math.round(avg * 1000) / 100 - 0.5); // current rating ×10, as Google shows it
+  const displayed = displayedTenths / 10;
+
+  // Displayed milestones strictly above the current displayed rating, up to 5.0.
+  const targetsTenths: number[] = [];
+  for (let t = displayedTenths + 1; t <= 50; t++) {
+    targetsTenths.push(t);
   }
 
-  if (targets.length === 0) return (
-    <p className="text-xs text-slate-500">Average is already at or above 4.9★.</p>
+  if (targetsTenths.length === 0) return (
+    <p className="text-xs text-slate-500">Already displaying 5.0★ — nothing higher to reach.</p>
   );
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-slate-500">
-        Current average: <strong className="text-slate-700">{avg.toFixed(2)}★</strong> based on{' '}
-        <strong className="text-slate-700">{n}</strong> fetched reviews.
-        Assumes all new reviews are <strong className="text-slate-700">5★</strong>.
+        Current average: <strong className="text-slate-700">{avg.toFixed(2)}★</strong>{' '}
+        (Google shows <strong className="text-slate-700">{displayed.toFixed(1)}★</strong>) based on{' '}
+        <strong className="text-slate-700">{n}</strong> fetched reviews. Assumes all new reviews are{' '}
+        <strong className="text-slate-700">5★</strong>; counts reach the rating Google would display.
       </p>
 
       <div className="overflow-hidden rounded-xl border border-slate-100">
@@ -277,13 +289,18 @@ function GoalCalculator({ reviews }: { reviews: Review[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {targets.map((target) => {
-              const needed = Math.ceil((target * n - sum) / (5 - target));
+            {targetsTenths.map((t) => {
+              const target = t / 10;
+              // Min true average that still displays as `target` is just above (target − 0.05).
+              const threshold = (t - 0.5) / 10;
+              // Need (sum + 5k) / (n + k) > threshold  ⇒  k > (threshold·n − sum) / (5 − threshold).
+              const raw = (threshold * n - sum) / (5 - threshold);
+              const needed = Math.max(0, Math.floor(raw + 1e-9) + 1);
               // Colour-code by how many are needed
               const easy = needed <= 10;
               const medium = needed <= 50;
               return (
-                <tr key={target} className="hover:bg-slate-50 transition-colors">
+                <tr key={t} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-2.5">
                     <span className="font-black text-slate-800">{target.toFixed(1)}</span>
                     <span className="text-amber-400 ml-1">★</span>
@@ -597,6 +614,31 @@ export default async function GoogleReviewsPage({ searchParams }: { searchParams
 
   const pendingCount = tasks.filter((t) => t.status === 'pending').length;
 
+  const historyItems = tasks.map((t) => {
+    const isActive = t.id === activeId;
+    return (
+      <a
+        key={t.id}
+        href={t.status === 'ready' ? `/dashboard/google-reviews?id=${t.id}` : '#'}
+        className={`flex items-start gap-3 px-5 py-3.5 transition-colors ${
+          isActive ? 'bg-blue-50' : t.status === 'ready' ? 'hover:bg-slate-50 cursor-pointer' : 'cursor-default'
+        }`}
+      >
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-semibold truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>
+            {t.business}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            {t.location} · {t.language} · {t.depth} reviews · {formatDate(t.ts)}
+            {t.resultCount ? ` · ${t.resultCount} results` : ''}
+            {t.cost !== undefined ? ` · $${t.cost.toFixed(5)}` : ''}
+          </p>
+        </div>
+        <StatusBadge status={t.status} />
+      </a>
+    );
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -612,6 +654,8 @@ export default async function GoogleReviewsPage({ searchParams }: { searchParams
         </div>
       )}
 
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <div className="flex-1 min-w-0 space-y-6">
       {/* Form */}
       <form action={submitReviewsTaskAction} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -694,41 +738,6 @@ export default async function GoogleReviewsPage({ searchParams }: { searchParams
             <strong>{pendingCount}</strong> task{pendingCount > 1 ? 's' : ''} being processed by DataForSEO.
             Reload the page to check progress.
           </span>
-        </div>
-      )}
-
-      {/* Task history */}
-      {tasks.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">History</h2>
-          </div>
-          <div className="divide-y divide-slate-50">
-            {tasks.map((t) => {
-              const isActive = t.id === activeId;
-              return (
-                <a
-                  key={t.id}
-                  href={t.status === 'ready' ? `/dashboard/google-reviews?id=${t.id}` : '#'}
-                  className={`flex items-center gap-4 px-6 py-3.5 transition-colors ${
-                    isActive ? 'bg-blue-50' : t.status === 'ready' ? 'hover:bg-slate-50 cursor-pointer' : 'cursor-default'
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold truncate ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>
-                      {t.business}
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      {t.location} · {t.language} · {t.depth} reviews · {formatDate(t.ts)}
-                      {t.resultCount ? ` · ${t.resultCount} results` : ''}
-                      {t.cost !== undefined ? ` · $${t.cost.toFixed(5)}` : ''}
-                    </p>
-                  </div>
-                  <StatusBadge status={t.status} />
-                </a>
-              );
-            })}
-          </div>
         </div>
       )}
 
@@ -816,9 +825,15 @@ export default async function GoogleReviewsPage({ searchParams }: { searchParams
 
           {/* Reviews list */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Reviews</h2>
-              <span className="text-xs text-slate-400">{reviews.length} fetched</span>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-slate-400">{reviews.length} fetched</span>
+                <DownloadCsvButton
+                  reviews={reviews}
+                  filename={`${(activeTask.business || 'reviews').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase()}-reviews.csv`}
+                />
+              </div>
             </div>
             <div className="divide-y divide-slate-50">
               {reviews.slice(0, 100).map((r, i) => (
@@ -868,6 +883,12 @@ export default async function GoogleReviewsPage({ searchParams }: { searchParams
           Task is being processed by DataForSEO. Reload the page in a few seconds.
         </div>
       )}
+        </div>
+
+        {tasks.length > 0 && (
+          <HistorySidebar title="History" items={historyItems} />
+        )}
+      </div>
     </div>
   );
 }
