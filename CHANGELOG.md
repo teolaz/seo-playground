@@ -8,6 +8,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **AI Prompt Test** (`/dashboard/llm-responses`) — ask ChatGPT, Claude, Gemini, or Perplexity a live prompt and see the model's actual answer, cited sources, token usage, and cost, via DataForSEO's LLM Responses API. Platform/model cascading select, optional system message and web-search country targeting, history sidebar.
+- **AI Keyword Data** (`/dashboard/ai-keyword-data`) — bulk keyword search volume estimates reflecting usage inside AI tools (ChatGPT, Gemini, etc.), with 12-month trend sparklines, via DataForSEO's AI Keyword Data API.
 - **History sidebar** — Google Reviews and Geo-Grid history moved out of the page flow into a sticky right-hand sidebar with client-side pagination (8 entries per page). Reusable `HistorySidebar` component.
 - **Reviews CSV export** — download button in the Reviews card exports *all* fetched reviews (Date, Rating, Author, Local guide, Author review count, Review, Owner response, Owner replied) as a UTF-8 (BOM) CSV.
 - **Reviews-per-month chart** — native hover tooltip (month, year, count) via `<title>`, plus a month initial under every bar.
