@@ -420,6 +420,28 @@ function initSchema(db: Database.Database) {
       cost REAL,
       items TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS ai_kwdata_searches (
+      id TEXT PRIMARY KEY,
+      ts INTEGER NOT NULL,
+      keywords TEXT NOT NULL,
+      location TEXT NOT NULL,
+      language TEXT NOT NULL,
+      result_count INTEGER NOT NULL,
+      cost REAL,
+      items TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS llm_response_searches (
+      id TEXT PRIMARY KEY,
+      ts INTEGER NOT NULL,
+      platform TEXT NOT NULL,
+      model TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      web_search INTEGER NOT NULL DEFAULT 0,
+      cost REAL,
+      result TEXT NOT NULL
+    );
   `);
 
   db.exec(`CREATE INDEX IF NOT EXISTS idx_rank_checks_kw ON rank_checks(keyword_id, checked_at DESC)`);
@@ -1621,4 +1643,38 @@ export function saveBlBulkRd(entry: BlBulkRdEntry, items: unknown[]): void {
 export function getBlBulkRdResults<T>(id: string): T[] | null {
   const row = getDb().prepare('SELECT items FROM bl_bulk_ref_domains WHERE id = ?').get(id) as { items: string } | undefined;
   if (!row) return null; try { return JSON.parse(row.items) as T[]; } catch { return null; }
+}
+
+// ─── AI Keyword Data ──────────────────────────────────────────────────────────
+
+export interface AiKwDataEntry { id: string; ts: number; keywords: string; location: string; language: string; count: number; cost?: number; }
+type AKDRow = { id: string; ts: number; keywords: string; location: string; language: string; result_count: number; cost: number | null };
+
+export function getAiKwDataHistory(): AiKwDataEntry[] {
+  const rows = getDb().prepare('SELECT id, ts, keywords, location, language, result_count, cost FROM ai_kwdata_searches ORDER BY ts DESC LIMIT 20').all() as AKDRow[];
+  return rows.map((r) => ({ id: r.id, ts: r.ts, keywords: r.keywords, location: r.location, language: r.language, count: r.result_count, cost: r.cost ?? undefined }));
+}
+export function saveAiKwDataSearch(entry: AiKwDataEntry, items: unknown[]): void {
+  getDb().prepare('INSERT OR REPLACE INTO ai_kwdata_searches (id, ts, keywords, location, language, result_count, cost, items) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(entry.id, entry.ts, entry.keywords, entry.location, entry.language, entry.count, entry.cost ?? null, JSON.stringify(items));
+}
+export function getAiKwDataResults<T>(id: string): T[] | null {
+  const row = getDb().prepare('SELECT items FROM ai_kwdata_searches WHERE id = ?').get(id) as { items: string } | undefined;
+  if (!row) return null; try { return JSON.parse(row.items) as T[]; } catch { return null; }
+}
+
+// ─── LLM Responses (AI Prompt Test) ──────────────────────────────────────────
+
+export interface LlmResponseEntry { id: string; ts: number; platform: string; model: string; prompt: string; webSearch: boolean; cost?: number; }
+type LRRow = { id: string; ts: number; platform: string; model: string; prompt: string; web_search: number; cost: number | null };
+
+export function getLlmResponseHistory(): LlmResponseEntry[] {
+  const rows = getDb().prepare('SELECT id, ts, platform, model, prompt, web_search, cost FROM llm_response_searches ORDER BY ts DESC LIMIT 20').all() as LRRow[];
+  return rows.map((r) => ({ id: r.id, ts: r.ts, platform: r.platform, model: r.model, prompt: r.prompt, webSearch: !!r.web_search, cost: r.cost ?? undefined }));
+}
+export function saveLlmResponseSearch<T>(entry: LlmResponseEntry, result: T): void {
+  getDb().prepare('INSERT OR REPLACE INTO llm_response_searches (id, ts, platform, model, prompt, web_search, cost, result) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(entry.id, entry.ts, entry.platform, entry.model, entry.prompt, entry.webSearch ? 1 : 0, entry.cost ?? null, JSON.stringify(result));
+}
+export function getLlmResponseResult<T>(id: string): T | null {
+  const row = getDb().prepare('SELECT result FROM llm_response_searches WHERE id = ?').get(id) as { result: string } | undefined;
+  if (!row) return null; try { return JSON.parse(row.result) as T; } catch { return null; }
 }
